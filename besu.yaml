@@ -1,0 +1,146 @@
+version: '3.6'
+
+x-besu-def:
+  &besu-def
+  restart: "on-failure"
+  image: hyperledger/besu:${BESU_VERSION}
+  environment:
+    &besu-def-env
+    # log4j_ monitoring
+    - LOG4J_CONFIGURATION_FILE=/config/log-config.xml
+    # - BESU_P2P_HOST=127.0.0.1
+    - BESU_RPC_HTTP_ENABLED=${BESU_RPC_HTTP_ENABLED}
+    - BESU_RPC_HTTP_HOST=${BESU_RPC_HTTP_HOST}
+    - BESU_MIN_GAS_PRICE=${BESU_MIN_GAS_PRICE}
+    - BESU_HOST_ALLOWLIST=${BESU_HOST_ALLOWLIST}
+    - BESU_DATA_PATH=${BESU_DATA_PATH}
+    - BESU_ETHSTATS_CONTACT=${BESU_ETHSTATS_CONTACT}
+  
+  # volumes:
+  #   &besu-def-volumes
+  #   - ./config/besu/:/config
+  #   - ./logs/besu:/tmp/besu
+  #   # - ${REAL_NAME_OF_VOLUME}:/var/lib/postgresql/data
+
+  entrypoint:  ["/opt/besu/bin/besu", "--config-file=/config/config.toml" ,
+                # "--p2p-host=0.0.0.0",
+                # "--nat-method=upnp",
+                # "--nat-method=NONE",
+                "--node-private-key-file=/opt/besu/keys/key",
+                "--rpc-http-api=EEA,WEB3,ETH,NET,TRACE,DEBUG,ADMIN,PERM,${CONSENSUS_ALGO}",
+                "--rpc-ws-api=EEA,WEB3,ETH,NET,TRACE,DEBUG,ADMIN,PERM,${CONSENSUS_ALGO}",
+                "--host-allowlist=*"
+              ]
+
+services:
+
+  ###
+  ## validators
+  # QBFT and IBFT requeries at least 4 of then to beacame byazantine fout tolerant
+  besu01:
+    << : *besu-def
+    container_name: besu01.bc.ufcg.net
+    ports:
+      - 11001:8545/tcp
+      - 30303
+      - 9545      
+    profiles:
+      - blockchain
+    environment:
+      - OTEL_RESOURCE_ATTRIBUTES=service.name=besu01,service.version=${BESU_VERSION}
+      # - BESU_P2P_HOST=besu01
+      # - BESU_ETHSTATS=besu_01:secret@dashboard:3000
+      # - BESU_ETHSTATS=besu_01:secret@monitor:3001
+      # - BESU_ETHSTATS=besu_01@10.10.100.101:3001
+    labels:
+      - "consensus=besu"
+    volumes:
+      - ./config/besu/:/config
+      - ./nodes/besu01/logs:/tmp/besu
+      # - ./logs/besu:/tmp/besu
+      #besu keys
+      - ./nodes/besu01/keys:/opt/besu/keys
+      #besu data
+      # - besu_01_data:/opt/data
+      - ./nodes/besu01/data:/opt/data
+  
+  besu02:
+    << : *besu-def
+    container_name: besu02.bc.ufcg.net
+    ports:
+      - 11002:8545/tcp
+      - 30303
+      - 9545
+    profiles:
+      - blockchain
+    environment:
+      - OTEL_RESOURCE_ATTRIBUTES=service.name=besu01,service.version=${BESU_VERSION}
+      # - BESU_P2P_HOST=besu02
+    labels:
+      - "consensus=besu"
+    volumes:
+      - ./config/besu/:/config
+      - ./nodes/besu01/logs:/tmp/besu
+      #besu keys
+      - ./nodes/besu02/keys:/opt/besu/keys
+      #besu data
+      - ./nodes/besu02/data:/opt/data
+      # - besu_02_data:/opt/data
+
+  besu03:
+    << : *besu-def
+    container_name: besu03.bc.ufcg.net
+    ports:
+      - 11003:8545/tcp
+      - 30303
+      - 9545
+    profiles:
+      - blockchain
+    environment:
+      - OTEL_RESOURCE_ATTRIBUTES=service.name=besu01,service.version=${BESU_VERSION}
+      # - BESU_P2P_HOST=besu03
+    labels:
+      - "consensus=besu"
+    volumes:
+      - ./config/besu/:/config
+      - ./nodes/besu01/logs:/tmp/besu
+      # besu keys
+      - ./nodes/besu03/keys:/opt/besu/keys
+      # besu data
+      - ./nodes/besu03/data:/opt/data
+
+  rpcnode:
+    << : *besu-def
+    container_name: rpcnode.bc.ufcg.net
+    profiles:
+      - blockchain
+    environment:
+      - OTEL_RESOURCE_ATTRIBUTES=service.name=rpcnode,service.version=${BESU_VERSION}
+      # - BESU_P2P_HOST=rpcnode
+    volumes:
+      - ./config/besu/:/config
+      - ./nodes/besu01/logs:/tmp/besu
+      - ./nodes/rpcnode/keys:/opt/besu/keys
+    depends_on:
+      - besu01
+      - besu02
+      - besu03
+    ports:
+      - 8545:8545/tcp
+      - 8546:8546/tcp
+
+  explorer:
+    container_name: explorer.bc.ufcg.net
+    build: nodes/block-explorer-light
+    image: local/block-explorer-light:dev
+    depends_on:
+      - rpcnode
+    profiles:
+      - blockchain
+    ports:
+      - 5000:80/tcp
+ 
+
+ 
+volumes:
+  public-keys:

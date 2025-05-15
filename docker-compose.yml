@@ -1,0 +1,66 @@
+version: '3.6'
+
+services:
+
+  ###
+  ### Blockchain 
+  ###
+  ### docker compose --profile blockchain up -d
+  ### docker compose --profile blockchain down
+  besu01:
+    extends:
+      file: ./besu.yaml
+      service: besu01
+    environment:
+      - BESU_P2P_HOST=10.10.100.11
+    networks:
+      bc-net:
+        ipv4_address: 10.10.100.11
+
+  besu02:
+    extends:
+      file: ./besu.yaml
+      service: besu02
+    environment:
+      - BESU_P2P_HOST=10.10.100.12
+    networks:
+      bc-net:
+        ipv4_address: 10.10.100.12
+
+  besu03:
+    extends:
+      file: ./besu.yaml
+      service: besu03
+    environment:
+      - BESU_P2P_HOST=10.10.100.13
+    networks:
+      bc-net:
+        ipv4_address: 10.10.100.13
+
+  rpcnode:
+    extends:
+      file: ./besu.yaml
+      service: rpcnode
+    environment:
+      - BESU_P2P_HOST=10.10.100.15
+    networks:
+      bc-net:
+        ipv4_address: 10.10.100.15
+  
+  explorer:
+    extends:
+      file: ./besu.yaml
+      service: explorer
+    networks:
+      bc-net:
+        ipv4_address: 10.10.100.51
+ 
+ 
+
+networks:
+  bc-net:
+    name: bc-net
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.10.100.0/24
