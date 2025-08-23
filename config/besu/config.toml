@@ -42,3 +42,6 @@ bootnodes=["enode://73dc33c3649403d6d1a5499bf0da3acda9dc56ac6a5aa03dfdc6d34760a6
 # static nodes
 static-nodes-file="/config/static-nodes.json"
 discovery-enabled=true
+
+# rpc
+rpc-http-api = ["ETH", "NET", "WEB3" , "ADMIN", "DEBUG", "MINER" ]
