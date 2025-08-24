@@ -5,6 +5,7 @@ services:
       service: besu01
     environment:
       - BESU_P2P_HOST=10.10.100.11
+      - HOSTNAME=besu01.bc.ufcg.net
     networks:
       bc-net:
         ipv4_address: 10.10.100.11
@@ -19,6 +20,7 @@ services:
       service: besu02
     environment:
       - BESU_P2P_HOST=10.10.100.12
+      - HOSTNAME=besu02.bc.ufcg.net
     networks:
       bc-net:
         ipv4_address: 10.10.100.12
@@ -32,6 +34,7 @@ services:
       service: besu03
     environment:
       - BESU_P2P_HOST=10.10.100.13
+      - HOSTNAME=besu03.bc.ufcg.net
     networks:
       bc-net:
         ipv4_address: 10.10.100.13
@@ -46,6 +49,7 @@ services:
       service: rpcnode
     environment:
       - BESU_P2P_HOST=10.10.100.15
+      - HOSTNAME=rpcnode.bc.ufcg.net
     networks:
       bc-net:
         ipv4_address: 10.10.100.15
